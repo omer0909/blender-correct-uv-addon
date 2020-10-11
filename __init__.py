@@ -13,7 +13,16 @@ bl_info = {
 import bpy
 import bmesh
 
-def mainCorrectUv(method_d,fill_holes_d,correct_aspect_d,use_subsurf_data_d,margin_d):
+deafults={
+"Angle_Limit":66.0,
+"Method":'ANGLE_BASED',
+"Fill_Holes":True,
+"Correct_Aspect":True,
+"Use_Subdivision_Surface":False,
+"Margin":0.001,
+}
+
+def mainCorrectUv():
     objects=[]
     objects.append(bpy.context.active_object.name)
     for object in bpy.context.selected_objects:
@@ -39,7 +48,8 @@ def mainCorrectUv(method_d,fill_holes_d,correct_aspect_d,use_subsurf_data_d,marg
             edges[index].append(v.seam)
             number+=1
         
-    bpy.ops.uv.smart_project()
+    bpy.ops.uv.smart_project(angle_limit=deafults["Angle_Limit"])
+
     
     area=bpy.context.area.ui_type
     bpy.context.area.ui_type = 'UV'
@@ -47,7 +57,7 @@ def mainCorrectUv(method_d,fill_holes_d,correct_aspect_d,use_subsurf_data_d,marg
     bpy.context.area.ui_type =area
     
     bpy.ops.uv.seams_from_islands()
-    bpy.ops.uv.unwrap(method=method_d, fill_holes=fill_holes_d, correct_aspect=correct_aspect_d, use_subsurf_data=use_subsurf_data_d, margin=margin_d)
+    bpy.ops.uv.unwrap(method=deafults["Method"], fill_holes=deafults["Fill_Holes"], correct_aspect=deafults["Correct_Aspect"], use_subsurf_data=deafults["Use_Subdivision_Surface"], margin=deafults["Margin"])
     bpy.ops.mesh.mark_seam(clear=True)
     
     
@@ -72,7 +82,6 @@ def mainCorrectUv(method_d,fill_holes_d,correct_aspect_d,use_subsurf_data_d,marg
 
 
 
-
 even=[False]
 
 class CorrectUv(bpy.types.Operator):
@@ -80,12 +89,16 @@ class CorrectUv(bpy.types.Operator):
     bl_idname="wm.correct_uv"
     
     
-    preset_enum :bpy.props.EnumProperty(
-        name="",
-        description="Method",
+    
+    Angle_Limit=bpy.props.FloatProperty(name="Angle Limit",default=66.0,min=1,max=89,precision=3)
+    
+    
+    Method :bpy.props.EnumProperty(
+        name="Method",
+        default='ANGLE_BASED',
         items=[
-            ("OP1","Angle Based",""),
-            ("OP2","Conformal",""),
+            ('ANGLE_BASED',"Angle Based",""),
+            ('CONFORMAL',"Conformal",""),
         ]
     )
     
@@ -93,22 +106,36 @@ class CorrectUv(bpy.types.Operator):
     Correct_Aspect=bpy.props.BoolProperty(name="Correct Aspect",default=True)
     Use_Subdivision_Surface=bpy.props.BoolProperty(name="Use Subdivision Surface",default=False)
     
-    Margin=bpy.props.FloatProperty(name="value",default=0.001,min=0,max=1,precision=3)
+    Margin=bpy.props.FloatProperty(name="Margin",default=0.001,min=0,max=1,precision=3)
     
     
     def execute(self,context):
+        
         if even[0]:
             even[0]=False
-            method='ANGLE_BASED' if self.preset_enum=="OP1" else 'CONFORMAL'
-            mainCorrectUv(method,self.Fill_Holes,self.Correct_Aspect,self.Use_Subdivision_Surface,self.Margin)
+            
+            deafults["Angle_Limit"]=self.Angle_Limit
+            deafults["Method"]=self.Method
+            deafults["Fill_Holes"]=self.Fill_Holes
+            deafults["Correct_Aspect"]=self.Correct_Aspect
+            deafults["Use_Subdivision_Surface"]=self.Use_Subdivision_Surface
+            deafults["Margin"]=self.Margin
+            
+            mainCorrectUv()
         else:
-            even[0]=True
+            even[0]=False
             bpy.ops.wm.correct_uv("INVOKE_DEFAULT")
-        
-        
         return {"FINISHED"}
     
     def invoke(self,context,event):
+        self.Angle_Limit=deafults["Angle_Limit"]
+        self.Method=deafults["Method"]
+        self.Fill_Holes=deafults["Fill_Holes"]
+        self.Correct_Aspect=deafults["Correct_Aspect"]
+        self.Use_Subdivision_Surface=deafults["Use_Subdivision_Surface"]
+        self.Margin=deafults["Margin"]
+        even[0]=True
+        
         return context.window_manager.invoke_props_dialog(self)
 
 
