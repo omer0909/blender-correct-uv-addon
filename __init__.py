@@ -137,6 +137,8 @@ class CorrectUv(bpy.types.Operator):
         even[0]=True
         
         return context.window_manager.invoke_props_dialog(self)
+    def cancel(self, context):
+        even[0]=False
 
 
 
